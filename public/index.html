@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Brand Checker</title>
+  <title>Sempidameda</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
@@ -326,8 +326,13 @@
     .mg-table-wrap {
       max-height: 300px;
       overflow-y: auto;
+      overflow-x: auto;
       border: 1px solid var(--border-light);
       border-radius: 8px;
+    }
+
+    .mg-header {
+      min-height: 44px;
     }
 
     /* Variation grid */
@@ -566,13 +571,28 @@
       .var-grid { grid-template-columns: 1fr; }
       .brand-tabs { flex-wrap: wrap; }
       .history-panel { width: 100%; }
+
+      .result-card { flex-wrap: wrap; }
+      .card-right {
+        flex-direction: row;
+        width: 100%;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border-light);
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .mg-table { font-size: 0.62rem; }
+      .mg-table th, .mg-table td { padding: 0.3rem 0.35rem; }
+      .mg-label { font-size: 0.65rem; }
     }
   </style>
 </head>
 <body>
   <div class="page">
     <div class="header">
-      <h1>Brand<br>Checker</h1>
+      <h1>Sempi<br>dameda</h1>
       <p>Disponibilidad de nombres de marca</p>
     </div>
 

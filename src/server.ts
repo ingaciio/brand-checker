@@ -65,7 +65,13 @@ const server = createServer(async (req, res) => {
         name,
         description: description || undefined,
       });
-      setCache(cacheKey, result);
+      // Only cache if no errors/timeouts — avoid serving stale failures
+      const hasErrors = result.results.some(
+        (r: { status: string }) => r.status === "error" || r.status === "unknown"
+      );
+      if (!hasErrors) {
+        setCache(cacheKey, result);
+      }
       res.writeHead(200, {
         "Content-Type": "application/json",
         "X-Cache": "MISS",
@@ -180,5 +186,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\nBrand Checker corriendo en http://localhost:${PORT}\n`);
+  console.log(`\nSempidameda corriendo en http://localhost:${PORT}\n`);
 });
