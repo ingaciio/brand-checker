@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand Checker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --white: #FFFFFF;
+      --bg: #FAFAFA;
+      --border: #E5E5E5;
+      --border-light: #F0F0F0;
+      --text: #111111;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --green: #22C55E;
+      --green-bg: #F0FDF4;
+      --red: #EF4444;
+      --red-bg: #FEF2F2;
+      --yellow: #EAB308;
+      --yellow-bg: #FEFCE8;
+      --black: #111111;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 6rem;
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    .header {
+      margin-bottom: 3rem;
+    }
+    .header h1 {
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-weight: 400;
+    }
+
+    /* ── Search ────────────────────────────────────────────────── */
+    .search-form {
+      margin-bottom: 3rem;
+    }
+    .search-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .search-input {
+      flex: 1;
+      padding: 0.85rem 1.2rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+      background: var(--white);
+    }
+    .search-input:focus { border-color: var(--black); }
+    .search-input::placeholder { color: var(--text-muted); }
+
+    .search-submit {
+      padding: 0.85rem 2rem;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .search-submit:hover { opacity: 0.85; }
+    .search-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .search-desc {
+      width: 100%;
+      padding: 0.7rem 1.2rem;
+      border: 1.5px solid var(--border-light);
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      resize: none;
+      margin-top: 0.5rem;
+      transition: border-color 0.15s;
+    }
+    .search-desc:focus { border-color: var(--border); }
+    .search-desc::placeholder { color: #ccc; }
+    .search-hint {
+      font-size: 0.7rem;
+      color: #ccc;
+      margin-top: 0.4rem;
+    }
+
+    /* ── Loading ────────────────────────────────────────────────── */
+    .loading-state {
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+    .loading-spinner {
+      width: 32px; height: 32px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--black);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* ── Results ────────────────────────────────────────────────── */
+    .results-container { display: none; }
+    .results-container.visible { display: block; }
+
+    /* Summary */
+    .summary-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .summary-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.3rem 0.85rem;
+      border-radius: 100px;
+      letter-spacing: 0.02em;
+    }
+    .summary-pill.available { background: var(--green-bg); color: #16A34A; }
+    .summary-pill.taken { background: var(--red-bg); color: var(--red); }
+    .summary-pill.unknown { background: var(--yellow-bg); color: #A16207; }
+
+    /* Section titles */
+    .section-title {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.8rem;
+      margin-top: 2rem;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    /* Result cards */
+    .result-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.2rem;
+      border: 1.5px solid var(--border-light);
+      border-radius: var(--radius);
+      margin-bottom: 0.5rem;
+      background: var(--white);
+    }
+
+    .card-status {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-top: 0.4rem;
+      flex-shrink: 0;
+    }
+    .card-status.available { background: var(--green); }
+    .card-status.taken { background: var(--red); }
+    .card-status.unknown { background: var(--yellow); }
+    .card-status.error { background: #ccc; }
+
+    .card-body { flex: 1; min-width: 0; }
+    .card-platform {
+      font-size: 0.88rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.15rem;
+    }
+    .card-detail {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.3rem;
+      flex-shrink: 0;
+    }
+    .card-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+    }
+    .card-badge.available { background: var(--green-bg); color: #16A34A; }
+    .card-badge.taken { background: var(--red-bg); color: var(--red); }
+    .card-badge.unknown { background: var(--yellow-bg); color: #A16207; }
+    .card-badge.error { background: #f5f5f5; color: #999; }
+
+    .card-link {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .card-link:hover { color: var(--text); }
+
+    /* Variation grid */
+    .var-section-title {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 2rem 0 0.8rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    .var-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.4rem;
+    }
+    .var-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.75rem;
+      border: 1.5px solid var(--border-light);
+      border-radius: 8px;
+      font-size: 0.75rem;
+    }
+    .var-item.available { border-color: #BBF7D0; background: var(--green-bg); }
+    .var-item.taken { opacity: 0.4; }
+    .var-icon { font-size: 0.8rem; }
+    .var-name {
+      flex: 1; font-weight: 500;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── Multi-brand tabs ──────────────────────────────────────── */
+    .brand-tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+    }
+    .brand-tab {
+      padding: 0.55rem 1.2rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--white);
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .brand-tab.active {
+      background: var(--black);
+      color: var(--white);
+      border-color: var(--black);
+    }
+    .brand-tab:not(.active):hover { border-color: #ccc; }
+
+    .brand-panel { display: none; }
+    .brand-panel.active { display: block; }
+
+    /* ── Footer bar ────────────────────────────────────────────── */
+    .result-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1.5px solid var(--border-light);
+    }
+    .result-timestamp {
+      font-size: 0.65rem;
+      color: #ccc;
+    }
+    .export-bar { display: flex; gap: 0.4rem; }
+    .export-btn {
+      padding: 0.4rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--text);
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .export-btn:hover { border-color: var(--black); }
+    .export-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Error state ───────────────────────────────────────────── */
+    .error-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--red);
+      font-size: 0.85rem;
+    }
+
+    /* ── History toggle ────────────────────────────────────────── */
+    .history-toggle {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      padding: 0.55rem 1.2rem;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      transition: opacity 0.15s;
+    }
+    .history-toggle:hover { opacity: 0.85; }
+
+    /* ── History panel ─────────────────────────────────────────── */
+    .history-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.15);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .history-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .history-panel {
+      position: fixed;
+      top: 0; right: 0;
+      width: 360px;
+      height: 100vh;
+      background: var(--white);
+      border-left: 1.5px solid var(--border-light);
+      z-index: 201;
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .history-panel.open { transform: translateX(0); }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 1.5rem 1rem;
+      border-bottom: 1.5px solid var(--border-light);
+    }
+    .history-header h2 {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .history-actions { display: flex; gap: 0.4rem; }
+    .history-btn {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: none;
+      border: 1.5px solid var(--border-light);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .history-btn:hover { border-color: var(--border); color: var(--text); }
+    .history-btn.danger:hover { color: var(--red); border-color: #FECACA; }
+
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.5rem;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .history-item:hover { opacity: 0.7; }
+    .history-item:last-child { border-bottom: none; }
+
+    .hi-name {
+      font-weight: 800;
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+      min-width: 70px;
+    }
+    .hi-desc {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hi-stats { display: flex; gap: 0.3rem; flex-shrink: 0; }
+    .hi-stat {
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+    .hi-stat.g { background: var(--green-bg); color: #16A34A; }
+    .hi-stat.r { background: var(--red-bg); color: var(--red); }
+    .hi-date { font-size: 0.6rem; color: #ccc; flex-shrink: 0; }
+
+    .history-empty {
+      text-align: center;
+      color: #ccc;
+      font-size: 0.82rem;
+      padding: 4rem 1rem;
+    }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .page { padding: 2.5rem 1rem 5rem; }
+      .header h1 { font-size: 1.8rem; }
+      .search-row { flex-direction: column; }
+      .search-submit { width: 100%; }
+      .var-grid { grid-template-columns: 1fr; }
+      .brand-tabs { flex-wrap: wrap; }
+      .history-panel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <h1>Brand<br>Checker</h1>
+      <p>Disponibilidad de nombres de marca</p>
+    </div>
+
+    <form class="search-form" id="form">
+      <div class="search-row">
+        <input class="search-input" type="text" id="nameInput" placeholder="Nombre de marca" autocomplete="off" autofocus>
+        <button class="search-submit" type="submit" id="submitBtn">Buscar</button>
+      </div>
+      <textarea class="search-desc" id="descInput" placeholder="Descripcion (opcional)" rows="1"></textarea>
+      <p class="search-hint">Separa con coma para buscar hasta 5 marcas. La descripcion filtra clases NIZA.</p>
+    </form>
+
+    <div id="output"></div>
+
+    <div class="results-container" id="resultsContainer">
+      <div class="brand-tabs" id="brandTabs" style="display:none"></div>
+      <div id="resultStack"></div>
+    </div>
+  </div>
+
+  <button class="history-toggle" id="historyToggle">Historial</button>
+
+  <div class="history-overlay" id="historyOverlay"></div>
+  <div class="history-panel" id="historyPanel">
+    <div class="history-header">
+      <h2>Historial</h2>
+      <div class="history-actions">
+        <button class="history-btn danger" id="clearHistory">Limpiar</button>
+        <button class="history-btn" id="closeHistory">Cerrar</button>
+      </div>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('form');
+    const nameInput = document.getElementById('nameInput');
+    const descInput = document.getElementById('descInput');
+    const btn = document.getElementById('submitBtn');
+    const output = document.getElementById('output');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const brandTabs = document.getElementById('brandTabs');
+    const resultStack = document.getElementById('resultStack');
+    const historyToggle = document.getElementById('historyToggle');
+    const historyPanel = document.getElementById('historyPanel');
+    const historyOverlay = document.getElementById('historyOverlay');
+    const historyList = document.getElementById('historyList');
+    const clearBtn = document.getElementById('clearHistory');
+    const closeHistoryBtn = document.getElementById('closeHistory');
+
+    const VIGNELLI = ['#E5232A','#0070C0','#FFD100','#00843D','#F5A5B7','#7BC8F6'];
+    const icons = { available: '\u2705', taken: '\u274C', unknown: '\u2753', error: '\u26A0\uFE0F' };
+    const badgeLabels = { available: 'Disponible', taken: 'Tomado', unknown: 'Incierto', error: 'Error' };
+    let lastResults = [];
+    let colorIndex = 0;
+    function getNextColor() { return VIGNELLI[colorIndex++ % VIGNELLI.length]; }
+
+    async function runWithConcurrency(items, limit, fn) {
+      const executing = new Set();
+      for (const item of items) {
+        if (executing.size >= limit) await Promise.race(executing);
+        const p = fn(item).finally(() => executing.delete(p));
+        executing.add(p);
+      }
+      await Promise.all(executing);
+    }
+
+    // ── History panel ──────────────────────────────────────────
+    function openHistory() { historyPanel.classList.add('open'); historyOverlay.classList.add('open'); }
+    function closeHistory() { historyPanel.classList.remove('open'); historyOverlay.classList.remove('open'); }
+    historyToggle.addEventListener('click', openHistory);
+    closeHistoryBtn.addEventListener('click', closeHistory);
+    historyOverlay.addEventListener('click', closeHistory);
+
+    // ── Render ─────────────────────────────────────────────────
+    function renderCard(r) {
+      let links = '';
+      if (r.buyUrl) links += `<a class="card-link" href="${r.buyUrl}" target="_blank">Comprar</a>`;
+      if (r.url) links += `<a class="card-link" href="${r.url}" target="_blank">Verificar \u2197</a>`;
+      return `
+        <div class="result-card">
+          <div class="card-status ${r.status}"></div>
+          <div class="card-body">
+            <div class="card-platform">${r.displayName}</div>
+            <div class="card-detail">${r.detail}</div>
+          </div>
+          <div class="card-right">
+            <span class="card-badge ${r.status}">${badgeLabels[r.status]}</span>
+            ${links}
+          </div>
+        </div>`;
+    }
+
+    function renderResults(data) {
+      let html = '';
+      const s = data.summary;
+      html += '<div class="summary-bar">';
+      if (s.available) html += `<span class="summary-pill available">${s.available} disponible</span>`;
+      if (s.taken) html += `<span class="summary-pill taken">${s.taken} tomado</span>`;
+      if (s.unknown + s.errors) html += `<span class="summary-pill unknown">${s.unknown + s.errors} incierto</span>`;
+      html += '</div>';
+
+      html += '<div class="section-title">Resultados</div>';
+      for (const r of data.results) html += renderCard(r);
+
+      for (const group of data.variations || []) {
+        if (!group.checks?.length) continue;
+        const avail = group.checks.filter(c => c.status === 'available');
+        html += `<div class="var-section-title"><span>${group.displayName}</span><span>${avail.length} / ${group.checks.length}</span></div>`;
+        html += '<div class="var-grid">';
+        const sorted = [...group.checks].sort((a,b) => (a.status==='available'?-1:1)-(b.status==='available'?-1:1));
+        for (const c of sorted) {
+          html += `<div class="var-item ${c.status}"><span class="var-icon">${icons[c.status]}</span><span class="var-name">${c.displayName}</span></div>`;
+        }
+        html += '</div>';
+      }
+
+      html += `<div class="result-footer">
+        <span class="result-timestamp">${new Date(data.timestamp).toLocaleString('es-AR')}</span>
+        <div class="export-bar">
+          <button class="export-btn" onclick="exportResults('csv')">CSV</button>
+          <button class="export-btn" onclick="exportResults('pdf')">PDF</button>
+        </div>
+      </div>`;
+      return html;
+    }
+
+    function showResults(results, names) {
+      output.innerHTML = '';
+      resultsContainer.classList.remove('visible');
+
+      if (results.length === 1 && results[0]) {
+        brandTabs.style.display = 'none';
+        resultStack.innerHTML = renderResults(results[0]);
+      } else {
+        brandTabs.style.display = 'flex';
+        brandTabs.innerHTML = names.map((name, i) =>
+          `<button class="brand-tab ${i===0?'active':''}" data-index="${i}" onclick="switchBrand(${i})">${name}</button>`
+        ).join('');
+        resultStack.innerHTML = results.map((data, i) => {
+          if (!data) return `<div class="brand-panel ${i===0?'active':''}" data-panel="${i}"><div class="error-state">Error al buscar esta marca</div></div>`;
+          return `<div class="brand-panel ${i===0?'active':''}" data-panel="${i}">${renderResults(data)}</div>`;
+        }).join('');
+      }
+      resultsContainer.classList.add('visible');
+    }
+
+    function switchBrand(index) {
+      brandTabs.querySelectorAll('.brand-tab').forEach((t,i) => t.classList.toggle('active', i===index));
+      resultStack.querySelectorAll('.brand-panel').forEach((p,i) => p.classList.toggle('active', i===index));
+    }
+
+    // ── Export ──────────────────────────────────────────────────
+    async function exportResults(format) {
+      if (!lastResults.length) return;
+      const btns = document.querySelectorAll('.export-btn');
+      btns.forEach(b => { b.disabled = true; b.textContent = '...'; });
+      try {
+        const res = await fetch('/api/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ results: lastResults, format }),
+        });
+        if (!res.ok) { alert('Error exportando'); return; }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `brand-check.${format}`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      } finally {
+        btns.forEach((b,i) => { b.disabled = false; b.textContent = i===0?'CSV':'PDF'; });
+      }
+    }
+
+    // ── Submit ──────────────────────────────────────────────────
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const raw = nameInput.value.trim();
+      if (!raw) return;
+      const description = descInput.value.trim() || undefined;
+      const names = [...new Set(raw.split(',').map(n=>n.trim()).filter(Boolean))].slice(0,5);
+      if (!names.length) return;
+
+      btn.disabled = true;
+      lastResults = [];
+      resultsContainer.classList.remove('visible');
+
+      output.innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Buscando "${names.join(', ')}"</div></div>`;
+
+      if (names.length === 1) {
+        try {
+          const res = await fetch('/api/check', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:names[0],description}) });
+          const data = await res.json();
+          if (!res.ok) { output.innerHTML = `<div class="error-state">${data.error}</div>`; }
+          else { lastResults = [data]; output.innerHTML = ''; showResults([data], names); }
+        } catch (err) { output.innerHTML = `<div class="error-state">Error: ${err.message}</div>`; }
+      } else {
+        const results = new Array(names.length).fill(null);
+        await runWithConcurrency(names, 2, async (name) => {
+          const idx = names.indexOf(name);
+          try {
+            const res = await fetch('/api/check', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,description}) });
+            const data = await res.json();
+            if (res.ok) { results[idx] = data; lastResults.push(data); }
+          } catch {}
+        });
+        output.innerHTML = '';
+        showResults(results, names);
+      }
+      btn.disabled = false;
+      loadHistoryUI();
+    });
+
+    // ── History ─────────────────────────────────────────────────
+    async function loadHistoryUI() {
+      try {
+        const res = await fetch('/api/history');
+        const history = await res.json();
+        if (!history.length) { historyList.innerHTML = '<div class="history-empty">Sin busquedas</div>'; return; }
+        historyList.innerHTML = history.map((h,i) => {
+          const safe = btoa(encodeURIComponent(JSON.stringify(h)));
+          return `<div class="history-item" data-b64="${safe}">
+            <span class="hi-name">${h.name}</span>
+            <span class="hi-desc">${h.description||''}</span>
+            <div class="hi-stats"><span class="hi-stat g">${h.summary.available}</span><span class="hi-stat r">${h.summary.taken}</span></div>
+            <span class="hi-date">${new Date(h.timestamp).toLocaleDateString('es-AR')}</span>
+          </div>`;
+        }).join('');
+        historyList.querySelectorAll('.history-item').forEach(el => {
+          el.addEventListener('click', () => {
+            const entry = JSON.parse(decodeURIComponent(atob(el.getAttribute('data-b64'))));
+            nameInput.value = entry.name;
+            descInput.value = entry.description || '';
+            lastResults = [entry];
+            output.innerHTML = '';
+            showResults([entry], [entry.name]);
+            closeHistory();
+          });
+        });
+      } catch { historyList.innerHTML = '<div class="history-empty">Error</div>'; }
+    }
+
+    clearBtn.addEventListener('click', async () => {
+      if (!confirm('Limpiar todo el historial?')) return;
+      await fetch('/api/history', { method: 'DELETE' });
+      loadHistoryUI();
+    });
+
+    loadHistoryUI();
+  </script>
+</body>
+</html>
